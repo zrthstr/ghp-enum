@@ -83,10 +83,13 @@ def flatten_to_rows(data: dict, workflow_index: dict) -> list:
             wf_secrets = wf_by_repo.get(full_name, None)  # None = not scanned
             merged_secrets = merge_secrets(secret_names, secrets_status, wf_secrets)
 
+            default_branch = repo.get("default_branch") or "main"
             branches = repo.get("branches", [])
             bp_parts = []
             for b in branches:
                 bname = b.get("name", "")
+                if bname != default_branch:
+                    continue
                 protected = b.get("protected", False)
                 protection = b.get("protection")
                 if not protected:
