@@ -1,0 +1,8 @@
+[project]
+name = "git-ghp-enum-table"
+version = "0.1.0"
+description = "Enumerate GitHub PATs: repos, permissions, secrets, variables, branch protections"
+requires-python = ">=3.13"
+dependencies = [
+    "requests>=2.34.2",
+]
