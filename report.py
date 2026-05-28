@@ -20,7 +20,6 @@ def load_merged(output_dir: str) -> dict:
 
 
 def load_merged_workflows(output_dir: str) -> dict:
-    """Returns a dict keyed by token_prefix -> {full_name -> [secret_names]}."""
     path = os.path.join(output_dir, "merged_workflows.json")
     if not os.path.exists(path):
         return {}
@@ -33,6 +32,31 @@ def load_merged_workflows(output_dir: str) -> dict:
             for r in token_entry.get("repos", [])
         }
     return index
+
+
+def merge_secrets(api_names: list, api_status: str, wf_names: list | None):
+    """
+    Returns a list of (name, source) tuples where source is:
+      'api'      — confirmed via secrets API
+      'workflow' — referenced in workflow YAML only
+    Names appearing in both are returned once as 'api'.
+    wf_names=None means workflow scan not run yet.
+    """
+    api_set = set(api_names)
+    wf_set = set(wf_names) if wf_names is not None else set()
+
+    result = []
+    if api_status == "ok":
+        for name in sorted(api_set):
+            result.append((name, "api"))
+        for name in sorted(wf_set - api_set):
+            result.append((name, "workflow"))
+    else:
+        # No API data — show workflow secrets only, or the error
+        for name in sorted(wf_set):
+            result.append((name, "workflow"))
+
+    return result
 
 
 def flatten_to_rows(data: dict, workflow_index: dict) -> list:
@@ -56,6 +80,9 @@ def flatten_to_rows(data: dict, workflow_index: dict) -> list:
 
             variable_names = [] if isinstance(variables, str) else [v.get("name", "") for v in variables]
 
+            wf_secrets = wf_by_repo.get(full_name, None)  # None = not scanned
+            merged_secrets = merge_secrets(secret_names, secrets_status, wf_secrets)
+
             branches = repo.get("branches", [])
             bp_parts = []
             for b in branches:
@@ -74,7 +101,7 @@ def flatten_to_rows(data: dict, workflow_index: dict) -> list:
                         flags.append("CI")
                     if (protection.get("enforce_admins") or {}).get("enabled"):
                         flags.append("ADM")
-                    if (protection.get("restrictions")):
+                    if protection.get("restrictions"):
                         flags.append("RST")
                     summary = ",".join(flags) if flags else "on"
                     bp_parts.append(f"{bname}:✓({summary})")
@@ -87,10 +114,10 @@ def flatten_to_rows(data: dict, workflow_index: dict) -> list:
                 "repo_full_name": full_name,
                 "private": repo.get("private", False),
                 "permission_level": repo.get("permission_level", "none"),
-                "secret_names": sorted(set(secret_names)),
-                "variable_names": sorted(set(variable_names)),
+                "merged_secrets": merged_secrets,
                 "secrets_status": secrets_status,
-                "workflow_secrets": wf_by_repo.get(full_name, None),
+                "wf_scanned": wf_secrets is not None,
+                "variable_names": sorted(set(variable_names)),
                 "branch_protections_summary": " | ".join(bp_parts) if bp_parts else "—",
             })
     return rows
@@ -112,12 +139,26 @@ def _perm_sort_key(row):
     return (PERM_ORDER.get(row["permission_level"], 99), row["repo_full_name"])
 
 
+def _render_secrets(merged_secrets: list, secrets_status: str, wf_scanned: bool) -> str:
+    if not merged_secrets:
+        if secrets_status != "ok":
+            return f'<span class="s-err">{html.escape(secrets_status)}</span>'
+        return "—"
+    parts = []
+    for name, source in merged_secrets:
+        if source == "api":
+            parts.append(f'<span class="s-api">{html.escape(name)}</span>')
+        else:
+            parts.append(f'<span class="s-wf">{html.escape(name)}</span>')
+    return " ".join(parts)
+
+
 def build_html_table(rows: list, shared_write_repos: set, include_secrets: bool) -> str:
     parts = ['<table id="main-table">']
 
     headers = ["Token Prefix", "Username", "Repo", "Private", "Permission"]
     if include_secrets:
-        headers += ["Secret Names", "Variable Names", "Workflow Secrets"]
+        headers += ["Secrets", "Variables"]
     headers += ["Branch Protections"]
 
     parts.append("<thead><tr>")
@@ -140,22 +181,10 @@ def build_html_table(rows: list, shared_write_repos: set, include_secrets: bool)
         parts.append(f"<td{perm_class}>{html.escape(perm)}</td>")
 
         if include_secrets:
-            if row["secrets_status"] == "ok":
-                secret_display = ", ".join(html.escape(s) for s in row["secret_names"]) or "—"
-            else:
-                secret_display = f'<span class="status-err">{html.escape(row["secrets_status"])}</span>'
-
+            secret_display = _render_secrets(row["merged_secrets"], row["secrets_status"], row["wf_scanned"])
             var_display = ", ".join(html.escape(v) for v in row["variable_names"]) or "—"
-
-            wf = row["workflow_secrets"]
-            if wf is None:
-                wf_display = '<span class="status-err">not scanned</span>'
-            else:
-                wf_display = ", ".join(html.escape(s) for s in wf) or "—"
-
             parts.append(f"<td>{secret_display}</td>")
             parts.append(f"<td>{var_display}</td>")
-            parts.append(f"<td>{wf_display}</td>")
 
         parts.append(f"<td>{html.escape(row['branch_protections_summary'])}</td>")
         parts.append("</tr>")
@@ -179,6 +208,8 @@ def build_html_page(table_html: str, title: str, generated_at: str = "") -> str:
   .legend span {{ display: inline-block; padding: 2px 8px; margin-right: 8px; border-radius: 3px; }}
   .legend .l-shared {{ background: #fff3cd; border: 1px solid #ffc107; }}
   .legend .l-highperm {{ color: #c0392b; font-weight: bold; }}
+  .legend .l-api {{ color: #222; font-weight: bold; }}
+  .legend .l-wf {{ color: #e67e22; }}
   .table-wrap {{ overflow-x: auto; max-height: 90vh; border: 1px solid #ccc; border-radius: 4px; }}
   table {{ border-collapse: collapse; width: 100%; background: #fff; }}
   th, td {{ border: 1px solid #ddd; padding: 5px 10px; vertical-align: top; white-space: nowrap; }}
@@ -186,7 +217,9 @@ def build_html_page(table_html: str, title: str, generated_at: str = "") -> str:
   tbody tr:hover {{ background: #eef2f7 !important; }}
   tr.shared-write {{ background: #fff3cd; }}
   .high-perm {{ color: #c0392b; font-weight: bold; }}
-  .status-err {{ color: #aaa; font-style: italic; }}
+  .s-api {{ color: #222; font-weight: bold; }}
+  .s-wf {{ color: #e67e22; }}
+  .s-err {{ color: #aaa; font-style: italic; }}
   .filters {{ margin-bottom: 8px; display: flex; gap: 8px; }}
   .filters input {{ padding: 4px 8px; font-family: monospace; font-size: 13px; width: 300px; border: 1px solid #ccc; border-radius: 3px; }}
   .filters label {{ font-size: 11px; color: #888; display: block; margin-bottom: 2px; }}
@@ -197,7 +230,9 @@ def build_html_page(table_html: str, title: str, generated_at: str = "") -> str:
 <div class="meta">Generated: {html.escape(generated_at)}</div>
 <div class="legend">
   <span class="l-shared">&#9632; shared write access (2+ tokens)</span>
-  <span class="l-highperm">&#9632; high permission (admin/maintain/push)</span>
+  <span class="l-highperm">&#9632; high permission</span>
+  <span class="l-api">&#9632; secret confirmed via API</span>
+  <span class="l-wf">&#9632; secret from workflow YAML only</span>
 </div>
 <div class="filters">
   <div><label>Filter rows</label><input id="filter-row" type="text" placeholder="repo, user, permission..." oninput="applyFilters()"></div>
@@ -212,9 +247,7 @@ function applyFilters() {{
   var s = document.getElementById('filter-secret').value.toLowerCase();
   document.querySelectorAll('#main-table tbody tr').forEach(function(row) {{
     var text = row.textContent.toLowerCase();
-    var rowMatch = !q || text.includes(q);
-    var secretMatch = !s || text.includes(s);
-    row.style.display = (rowMatch && secretMatch) ? '' : 'none';
+    row.style.display = (!q || text.includes(q)) && (!s || text.includes(s)) ? '' : 'none';
   }});
 }}
 </script>
@@ -231,7 +264,7 @@ def generate_reports(output_dir: str, report_output_dir: str = None) -> None:
     generated_at = data.get("generated_at", "")
 
     if not workflow_index:
-        print("Note: no merged_workflows.json found — Workflow Secrets column will show 'not scanned'. Run scan_workflows.py to populate it.")
+        print("Note: no merged_workflows.json found — run scan_workflows.py to add workflow-sourced secrets.")
 
     rows = flatten_to_rows(data, workflow_index)
     shared_write = find_shared_write_repos(rows)
