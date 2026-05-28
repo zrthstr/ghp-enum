@@ -1,0 +1,234 @@
+{
+  "generated_at": "2026-05-28T12:00:00+00:00",
+  "tokens": [
+    {
+      "token_prefix": "ghp_DEMO0001",
+      "user": {
+        "login": "alice-demo",
+        "id": 1000001,
+        "name": "Alice Demo",
+        "email": null,
+        "company": "demo-corp",
+        "type": "User"
+      },
+      "scopes": ["repo", "read:org"],
+      "repos": [
+        {
+          "full_name": "demo-corp/backend-api",
+          "owner": "demo-corp",
+          "name": "backend-api",
+          "private": true,
+          "default_branch": "main",
+          "permissions": {"admin": true, "maintain": true, "push": true, "triage": true, "pull": true},
+          "permission_level": "admin",
+          "secrets": [
+            {"name": "AWS_ACCESS_KEY_ID", "created_at": "2025-01-10T09:00:00Z", "updated_at": "2025-11-01T09:00:00Z"},
+            {"name": "AWS_SECRET_ACCESS_KEY", "created_at": "2025-01-10T09:00:00Z", "updated_at": "2025-11-01T09:00:00Z"},
+            {"name": "DATABASE_URL", "created_at": "2025-02-15T14:00:00Z", "updated_at": "2025-12-01T14:00:00Z"},
+            {"name": "SENTRY_DSN", "created_at": "2025-03-01T10:00:00Z", "updated_at": "2025-03-01T10:00:00Z"}
+          ],
+          "variables": [
+            {"name": "APP_ENV", "value": "production", "created_at": "2025-01-10T09:00:00Z", "updated_at": "2025-01-10T09:00:00Z"}
+          ],
+          "branches": [
+            {
+              "name": "main",
+              "protected": true,
+              "protection": {
+                "required_pull_request_reviews": {"required_approving_review_count": 2},
+                "required_status_checks": {"strict": true, "contexts": ["ci/tests"]},
+                "enforce_admins": {"enabled": true},
+                "restrictions": null
+              }
+            }
+          ]
+        },
+        {
+          "full_name": "demo-corp/frontend-app",
+          "owner": "demo-corp",
+          "name": "frontend-app",
+          "private": true,
+          "default_branch": "main",
+          "permissions": {"admin": false, "maintain": false, "push": true, "triage": true, "pull": true},
+          "permission_level": "push",
+          "secrets": [
+            {"name": "NPM_TOKEN", "created_at": "2025-04-01T10:00:00Z", "updated_at": "2025-04-01T10:00:00Z"},
+            {"name": "VERCEL_TOKEN", "created_at": "2025-04-01T10:00:00Z", "updated_at": "2026-01-15T10:00:00Z"}
+          ],
+          "variables": [],
+          "branches": [
+            {
+              "name": "main",
+              "protected": true,
+              "protection": {
+                "required_pull_request_reviews": {"required_approving_review_count": 1},
+                "required_status_checks": {"strict": false, "contexts": ["ci/lint"]},
+                "enforce_admins": {"enabled": false},
+                "restrictions": null
+              }
+            }
+          ]
+        },
+        {
+          "full_name": "demo-corp/infra-terraform",
+          "owner": "demo-corp",
+          "name": "infra-terraform",
+          "private": true,
+          "default_branch": "main",
+          "permissions": {"admin": false, "maintain": false, "push": true, "triage": true, "pull": true},
+          "permission_level": "push",
+          "secrets": [
+            {"name": "TF_API_TOKEN", "created_at": "2025-05-01T08:00:00Z", "updated_at": "2025-05-01T08:00:00Z"},
+            {"name": "AWS_ACCESS_KEY_ID", "created_at": "2025-05-01T08:00:00Z", "updated_at": "2025-05-01T08:00:00Z"},
+            {"name": "AWS_SECRET_ACCESS_KEY", "created_at": "2025-05-01T08:00:00Z", "updated_at": "2025-05-01T08:00:00Z"}
+          ],
+          "variables": [
+            {"name": "TF_WORKSPACE", "value": "prod", "created_at": "2025-05-01T08:00:00Z", "updated_at": "2025-05-01T08:00:00Z"}
+          ],
+          "branches": [
+            {"name": "main", "protected": true, "protection": "permission_denied"}
+          ]
+        },
+        {
+          "full_name": "demo-corp/public-docs",
+          "owner": "demo-corp",
+          "name": "public-docs",
+          "private": false,
+          "default_branch": "main",
+          "permissions": {"admin": false, "maintain": false, "push": true, "triage": true, "pull": true},
+          "permission_level": "push",
+          "secrets": "permission_denied",
+          "variables": [],
+          "branches": [
+            {"name": "main", "protected": false, "protection": null}
+          ]
+        },
+        {
+          "full_name": "demo-corp/legacy-monolith",
+          "owner": "demo-corp",
+          "name": "legacy-monolith",
+          "private": true,
+          "default_branch": "master",
+          "permissions": {"admin": false, "maintain": false, "push": false, "triage": false, "pull": true},
+          "permission_level": "pull",
+          "secrets": "permission_denied",
+          "variables": [],
+          "branches": [
+            {
+              "name": "master",
+              "protected": true,
+              "protection": {
+                "required_pull_request_reviews": {"required_approving_review_count": 1},
+                "required_status_checks": null,
+                "enforce_admins": {"enabled": false},
+                "restrictions": {"users": [], "teams": ["platform"]}
+              }
+            }
+          ]
+        }
+      ],
+      "errors": [
+        {"endpoint": "/repos/demo-corp/public-docs/actions/secrets", "status": 403, "reason": "permission_denied"},
+        {"endpoint": "/repos/demo-corp/legacy-monolith/actions/secrets", "status": 403, "reason": "permission_denied"}
+      ]
+    },
+    {
+      "token_prefix": "ghp_DEMO0002",
+      "user": {
+        "login": "bob-demo",
+        "id": 1000002,
+        "name": "Bob Demo",
+        "email": null,
+        "company": "demo-corp",
+        "type": "User"
+      },
+      "scopes": ["repo"],
+      "repos": [
+        {
+          "full_name": "demo-corp/backend-api",
+          "owner": "demo-corp",
+          "name": "backend-api",
+          "private": true,
+          "default_branch": "main",
+          "permissions": {"admin": false, "maintain": false, "push": true, "triage": true, "pull": true},
+          "permission_level": "push",
+          "secrets": "permission_denied",
+          "variables": [],
+          "branches": [
+            {
+              "name": "main",
+              "protected": true,
+              "protection": {
+                "required_pull_request_reviews": {"required_approving_review_count": 2},
+                "required_status_checks": {"strict": true, "contexts": ["ci/tests"]},
+                "enforce_admins": {"enabled": true},
+                "restrictions": null
+              }
+            }
+          ]
+        },
+        {
+          "full_name": "demo-corp/infra-terraform",
+          "owner": "demo-corp",
+          "name": "infra-terraform",
+          "private": true,
+          "default_branch": "main",
+          "permissions": {"admin": false, "maintain": false, "push": true, "triage": true, "pull": true},
+          "permission_level": "push",
+          "secrets": "permission_denied",
+          "variables": [],
+          "branches": [
+            {"name": "main", "protected": true, "protection": "permission_denied"}
+          ]
+        },
+        {
+          "full_name": "demo-corp/data-pipeline",
+          "owner": "demo-corp",
+          "name": "data-pipeline",
+          "private": true,
+          "default_branch": "main",
+          "permissions": {"admin": false, "maintain": false, "push": true, "triage": true, "pull": true},
+          "permission_level": "push",
+          "secrets": [
+            {"name": "SNOWFLAKE_PASSWORD", "created_at": "2025-06-01T08:00:00Z", "updated_at": "2025-06-01T08:00:00Z"},
+            {"name": "SLACK_WEBHOOK_URL", "created_at": "2025-06-01T08:00:00Z", "updated_at": "2025-06-01T08:00:00Z"}
+          ],
+          "variables": [
+            {"name": "PIPELINE_ENV", "value": "prod", "created_at": "2025-06-01T08:00:00Z", "updated_at": "2025-06-01T08:00:00Z"}
+          ],
+          "branches": [
+            {"name": "main", "protected": false, "protection": null}
+          ]
+        },
+        {
+          "full_name": "demo-corp/legacy-monolith",
+          "owner": "demo-corp",
+          "name": "legacy-monolith",
+          "private": true,
+          "default_branch": "master",
+          "permissions": {"admin": false, "maintain": false, "push": false, "triage": false, "pull": true},
+          "permission_level": "pull",
+          "secrets": "permission_denied",
+          "variables": [],
+          "branches": [
+            {
+              "name": "master",
+              "protected": true,
+              "protection": {
+                "required_pull_request_reviews": {"required_approving_review_count": 1},
+                "required_status_checks": null,
+                "enforce_admins": {"enabled": false},
+                "restrictions": {"users": [], "teams": ["platform"]}
+              }
+            }
+          ]
+        }
+      ],
+      "errors": [
+        {"endpoint": "/repos/demo-corp/backend-api/actions/secrets", "status": 403, "reason": "permission_denied"},
+        {"endpoint": "/repos/demo-corp/infra-terraform/actions/secrets", "status": 403, "reason": "permission_denied"},
+        {"endpoint": "/repos/demo-corp/legacy-monolith/actions/secrets", "status": 403, "reason": "permission_denied"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "generated_at": "2026-05-28T12:05:00+00:00",
+  "tokens": [
+    {
+      "token_prefix": "ghp_DEMO0001",
+      "scanned_at": "2026-05-28T12:05:00+00:00",
+      "repos": [
+        {
+          "full_name": "demo-corp/backend-api",
+          "workflow_secrets": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "DATABASE_URL", "SENTRY_DSN"]
+        },
+        {
+          "full_name": "demo-corp/frontend-app",
+          "workflow_secrets": ["NPM_TOKEN", "VERCEL_TOKEN", "SLACK_WEBHOOK_URL"]
+        },
+        {
+          "full_name": "demo-corp/infra-terraform",
+          "workflow_secrets": ["TF_API_TOKEN", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
+        },
+        {
+          "full_name": "demo-corp/public-docs",
+          "workflow_secrets": []
+        },
+        {
+          "full_name": "demo-corp/legacy-monolith",
+          "workflow_secrets": ["DEPLOY_SSH_KEY", "DATABASE_URL"]
+        }
+      ]
+    },
+    {
+      "token_prefix": "ghp_DEMO0002",
+      "scanned_at": "2026-05-28T12:05:00+00:00",
+      "repos": [
+        {
+          "full_name": "demo-corp/backend-api",
+          "workflow_secrets": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "DATABASE_URL", "SENTRY_DSN"]
+        },
+        {
+          "full_name": "demo-corp/infra-terraform",
+          "workflow_secrets": ["TF_API_TOKEN", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"]
+        },
+        {
+          "full_name": "demo-corp/data-pipeline",
+          "workflow_secrets": ["SNOWFLAKE_PASSWORD", "SLACK_WEBHOOK_URL"]
+        },
+        {
+          "full_name": "demo-corp/legacy-monolith",
+          "workflow_secrets": ["DEPLOY_SSH_KEY", "DATABASE_URL"]
+        }
+      ]
+    }
+  ]
+}
