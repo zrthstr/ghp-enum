@@ -5,6 +5,8 @@ Enumerate GitHub Personal Access Tokens: repos, permissions, secrets, variables,
 ## Install
 
 ```bash
+git clone git@github.com:zrthstr/ghp-enum.git
+cd ghp-enum
 uv sync
 ```
 
