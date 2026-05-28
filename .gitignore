@@ -11,5 +11,6 @@ wheels/
 
 # Deploy keys and secrets
 .ssh/
-output/
+output/*
+!output/.gitkeep
 tokens.txt
