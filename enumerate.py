@@ -137,10 +137,12 @@ def get_org_variables(session: requests.Session, org_login: str):
 
 
 def get_org_repos(session: requests.Session, org: str) -> list:
-    return paginate(session, f"/orgs/{org}/repos", {
-        "type": "all",
+    all_repos = paginate(session, "/user/repos", {
+        "visibility": "all",
+        "affiliation": "owner,collaborator,organization_member",
         "sort": "full_name",
     })
+    return [r for r in all_repos if r.get("owner", {}).get("login", "").lower() == org.lower()]
 
 
 PERMISSION_PRIORITY = ["admin", "maintain", "push", "triage", "pull"]
