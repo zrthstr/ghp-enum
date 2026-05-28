@@ -209,13 +209,16 @@ def enumerate_token(token: str, output_dir: str) -> dict:
     logger.info(f"  Found {len(repos_raw)} privileged repos")
     repos = []
 
-    for repo in repos_raw:
+    total = len(repos_raw)
+    for i, repo in enumerate(repos_raw, 1):
         owner = repo.get("owner", {}).get("login", "")
         name = repo.get("name", "")
         full_name = repo.get("full_name", f"{owner}/{name}")
         default_branch = repo.get("default_branch")
         permissions = repo.get("permissions", {})
         permission_level = derive_permission_level(permissions)
+
+        logger.info(f"  [{i}/{total}] {full_name} ({permission_level})")
 
         secrets = get_repo_secrets(session, owner, name)
         variables = get_repo_variables(session, owner, name)
