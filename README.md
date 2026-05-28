@@ -23,7 +23,7 @@ ghp_yyyyyyyyyyyyyy
 
 **Enumerate:**
 ```bash
-uv run python enumerate.py tokens.txt --output-dir ./output
+uv run python enumerate.py tokens.txt --org my-org --output-dir ./output
 ```
 
 Writes one JSON file per token (`{username}_{token_prefix}.json`) plus `merged_all.json` into `./output/`.

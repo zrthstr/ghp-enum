@@ -136,10 +136,9 @@ def get_org_variables(session: requests.Session, org_login: str):
     return paginate_wrapped(session, f"/orgs/{org_login}/actions/variables", "variables")
 
 
-def get_user_repos(session: requests.Session) -> list:
-    return paginate(session, "/user/repos", {
-        "affiliation": "owner,collaborator,organization_member",
-        "visibility": "all",
+def get_org_repos(session: requests.Session, org: str) -> list:
+    return paginate(session, f"/orgs/{org}/repos", {
+        "type": "all",
         "sort": "full_name",
     })
 
@@ -187,7 +186,7 @@ def find_existing_output(token_prefix: str, output_dir: str) -> str | None:
     return None
 
 
-def enumerate_token(token: str, output_dir: str) -> dict:
+def enumerate_token(token: str, output_dir: str, org: str) -> dict:
     token_prefix = token[:12]
 
     existing = find_existing_output(token_prefix, output_dir)
@@ -241,7 +240,7 @@ def enumerate_token(token: str, output_dir: str) -> dict:
         })
 
     # Repos
-    repos_raw = get_user_repos(session)
+    repos_raw = get_org_repos(session, org)
     logger.info(f"  Found {len(repos_raw)} repos")
     repos = []
 
@@ -337,6 +336,7 @@ def merge_results(results: list, output_dir: str) -> None:
 def main():
     parser = argparse.ArgumentParser(description="Enumerate GitHub PATs: repos, permissions, secrets, branch protections.")
     parser.add_argument("tokens_file", help="Text file with one PAT per line (# for comments)")
+    parser.add_argument("--org", required=True, help="GitHub organization to enumerate repos from")
     parser.add_argument("--output-dir", default="./output", help="Directory to write JSON output (default: ./output)")
     args = parser.parse_args()
 
@@ -355,7 +355,7 @@ def main():
     for i, token in enumerate(tokens, 1):
         logger.info(f"[{i}/{len(tokens)}]")
         try:
-            result = enumerate_token(token, args.output_dir)
+            result = enumerate_token(token, args.output_dir, args.org)
             results.append(result)
             if not result.get("user"):
                 failed += 1
