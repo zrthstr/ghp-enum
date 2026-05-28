@@ -162,6 +162,12 @@ def get_branch_protection(session: requests.Session, owner: str, repo: str, bran
     if status == 404:
         return "not_protected"
     if status == 200 and isinstance(data, dict):
+        # fetch required signatures as a separate endpoint
+        sig_data, sig_status, _ = api_get(session, f"/repos/{owner}/{repo}/branches/{encoded_branch}/protection/required_signatures")
+        if sig_status == 200 and isinstance(sig_data, dict):
+            data["required_signatures"] = sig_data.get("enabled", False)
+        else:
+            data["required_signatures"] = None
         return data
     return "not_protected"
 

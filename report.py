@@ -106,6 +106,8 @@ def flatten_to_rows(data: dict, workflow_index: dict) -> list:
                         flags.append("ADM")
                     if protection.get("restrictions"):
                         flags.append("RST")
+                    if protection.get("required_signatures"):
+                        flags.append("SGN")
                     summary = ",".join(flags) if flags else "on"
                     bp_parts.append(f"{bname}:✓({summary})")
                 else:

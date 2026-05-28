@@ -79,6 +79,7 @@ The HTML reports highlight repos where two or more tokens share write/admin acce
 | `✓(CI)` | Requires CI checks to pass |
 | `✓(ADM)` | Rules enforced even for admins |
 | `✓(RST)` | Push restricted to specific users/teams |
+| `✓(SGN)` | Commits must be signed |
 | `?` | Protected but details not accessible with this token |
 
 ### When evil actions are possible

@@ -38,7 +38,8 @@
                 "required_pull_request_reviews": {"required_approving_review_count": 2},
                 "required_status_checks": {"strict": true, "contexts": ["ci/tests"]},
                 "enforce_admins": {"enabled": true},
-                "restrictions": null
+                "restrictions": null,
+                "required_signatures": true
               }
             }
           ]
