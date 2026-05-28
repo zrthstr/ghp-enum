@@ -230,7 +230,7 @@ def generate_reports(output_dir: str, report_output_dir: str = None) -> None:
         out_path = os.path.join(report_output_dir, suffix)
         with open(out_path, "w") as f:
             f.write(page)
-        print(f"Written: {out_path}")
+        print(f"Written: {os.path.abspath(out_path)}")
 
 
 def main():
