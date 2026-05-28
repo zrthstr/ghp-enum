@@ -139,6 +139,7 @@ def get_org_variables(session: requests.Session, org_login: str):
 def get_user_repos(session: requests.Session) -> list:
     return paginate(session, "/user/repos", {
         "affiliation": "owner,collaborator,organization_member",
+        "visibility": "all",
         "sort": "full_name",
     })
 
