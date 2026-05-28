@@ -272,7 +272,7 @@ def enumerate_token(token: str, output_dir: str) -> dict:
 
     filename = f"{login}_{token_prefix}.json"
     _write_json(result, output_dir, filename)
-    logger.info(f"  Written: {filename} ({len(repos)} repos, {len(errors)} permission errors)")
+    logger.info(f"  Written: {filename} ({len(repos)} repos, {len(errors)} endpoints with restricted access)")
     return result
 
 
