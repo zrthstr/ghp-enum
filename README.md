@@ -57,7 +57,43 @@ Each per-token JSON contains:
 
 The HTML reports highlight repos where two or more tokens share write/admin access.
 
-## Notes
+## What the data means
+
+### Permission levels
+
+| Level | What you can do |
+|---|---|
+| `admin` | Full control: settings, branch protection, secrets, force push, delete branch |
+| `maintain` | Push, merge PRs, manage issues — but no settings or secrets |
+| `push` | Push commits, create/delete branches, trigger Actions |
+| `triage` | Read + manage issues/PRs, no code write |
+| `pull` | Read only |
+
+### Branch protection indicators
+
+| Symbol | Meaning |
+|---|---|
+| `✗` | No protection — direct push possible |
+| `✓(on)` | Protected but details not readable |
+| `✓(PR)` | Requires pull request review before merge |
+| `✓(CI)` | Requires CI checks to pass |
+| `✓(ADM)` | Rules enforced even for admins |
+| `✓(RST)` | Push restricted to specific users/teams |
+| `?` | Protected but details not accessible with this token |
+
+### When evil actions are possible
+
+| Situation | Risk |
+|---|---|
+| `push` + branch protection `✗` | Direct push to default branch — can modify code, inject backdoors, tamper with workflows |
+| `push` + `✓(PR,CI)` without `ADM` | Can bypass via admin token if you also have `admin` on the same repo |
+| `admin` + any protection | Can disable branch protection, then force push |
+| `admin` + `✓(ADM)` | Rules enforced even for this token — cannot bypass |
+| `push` + secrets visible | Can read secret names and trigger Actions that use them |
+| `admin` + secrets | Can read, create, and delete secrets |
+| Shared write (yellow rows) | Two or more tokens have write access — lateral movement possible if one is compromised |
+
+### Notes
 
 - Secrets and variables endpoints require `admin` scope on the repo/org; 403s are recorded as `permission_denied` and do not abort the run
 - Rate limits are handled automatically — the script sleeps until the reset window if the limit is nearly exhausted
