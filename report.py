@@ -159,10 +159,9 @@ def _render_secrets(merged_secrets: list, secrets_status: str, wf_scanned: bool)
 def build_html_table(rows: list, shared_write_repos: set, include_secrets: bool) -> str:
     parts = ['<table id="main-table">']
 
-    headers = ["Token Prefix", "Username", "Repo", "Private", "Permission"]
+    headers = ["Token Prefix", "Username", "Repo", "Private", "Permission", "Branch Protection"]
     if include_secrets:
         headers += ["Secrets", "Variables"]
-    headers += ["Branch Protections"]
 
     parts.append("<thead><tr>")
     for h in headers:
@@ -182,14 +181,13 @@ def build_html_table(rows: list, shared_write_repos: set, include_secrets: bool)
         parts.append(f"<td>{html.escape(row['repo_full_name'])}</td>")
         parts.append(f"<td>{private_str}</td>")
         parts.append(f"<td{perm_class}>{html.escape(perm)}</td>")
+        parts.append(f"<td>{html.escape(row['branch_protections_summary'])}</td>")
 
         if include_secrets:
             secret_display = _render_secrets(row["merged_secrets"], row["secrets_status"], row["wf_scanned"])
             var_display = ", ".join(html.escape(v) for v in row["variable_names"]) or "—"
             parts.append(f"<td>{secret_display}</td>")
             parts.append(f"<td>{var_display}</td>")
-
-        parts.append(f"<td>{html.escape(row['branch_protections_summary'])}</td>")
         parts.append("</tr>")
 
     parts.append("</tbody></table>")
