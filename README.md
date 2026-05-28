@@ -19,9 +19,7 @@ uv sync
 Create a `tokens.txt` with one PAT per line (`#` for comments):
 
 ```
-# some account
 ghp_xxxxxxxxxxxxxx
-# other account
 ghp_yyyyyyyyyyyyyy
 ```
 
