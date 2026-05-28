@@ -177,8 +177,24 @@ def get_branch_protection(session: requests.Session, owner: str, repo: str, bran
     return "not_protected"
 
 
+def find_existing_output(token_prefix: str, output_dir: str) -> str | None:
+    if not os.path.isdir(output_dir):
+        return None
+    for fname in os.listdir(output_dir):
+        if fname.endswith(f"_{token_prefix}.json"):
+            return os.path.join(output_dir, fname)
+    return None
+
+
 def enumerate_token(token: str, output_dir: str) -> dict:
     token_prefix = token[:12]
+
+    existing = find_existing_output(token_prefix, output_dir)
+    if existing:
+        logger.info(f"Skipping {token_prefix} — output already exists: {os.path.basename(existing)}")
+        with open(existing) as f:
+            return json.load(f)
+
     logger.info(f"Processing token {token_prefix}...")
 
     session = make_session(token)
@@ -334,19 +350,23 @@ def main():
 
     results = []
     failed = 0
+    skipped = 0
     for i, token in enumerate(tokens, 1):
-        logger.info(f"[{i}/{len(tokens)}] Processing token...")
+        logger.info(f"[{i}/{len(tokens)}]")
         try:
             result = enumerate_token(token, args.output_dir)
             results.append(result)
             if not result.get("user"):
                 failed += 1
+            elif find_existing_output(token[:12], args.output_dir):
+                skipped += 1
         except Exception as exc:
             logger.error(f"Unexpected error on token {i}: {exc}")
             failed += 1
 
     merge_results(results, args.output_dir)
-    logger.info(f"Done. {len(tokens) - failed}/{len(tokens)} tokens succeeded. Output: {args.output_dir}/")
+    fetched = len(tokens) - failed - skipped
+    logger.info(f"Done. {fetched} fetched, {skipped} skipped (already done), {failed} failed. Output: {args.output_dir}/")
 
 
 if __name__ == "__main__":
