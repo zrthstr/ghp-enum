@@ -63,13 +63,23 @@ def flatten_to_rows(data: dict, workflow_index: dict) -> list:
                 protected = b.get("protected", False)
                 protection = b.get("protection")
                 if not protected:
-                    bp_parts.append(f"{bname}:none")
-                elif isinstance(protection, str):
-                    bp_parts.append(f"{bname}:{protection}")
+                    bp_parts.append(f"{bname}:✗")
+                elif protection == "permission_denied":
+                    bp_parts.append(f"{bname}:?")
                 elif isinstance(protection, dict):
-                    bp_parts.append(f"{bname}:protected")
+                    flags = []
+                    if protection.get("required_pull_request_reviews"):
+                        flags.append("PR")
+                    if protection.get("required_status_checks"):
+                        flags.append("CI")
+                    if (protection.get("enforce_admins") or {}).get("enabled"):
+                        flags.append("ADM")
+                    if (protection.get("restrictions")):
+                        flags.append("RST")
+                    summary = ",".join(flags) if flags else "on"
+                    bp_parts.append(f"{bname}:✓({summary})")
                 else:
-                    bp_parts.append(f"{bname}:unknown")
+                    bp_parts.append(f"{bname}:✓")
 
             rows.append({
                 "token_prefix": token_prefix,
@@ -77,11 +87,11 @@ def flatten_to_rows(data: dict, workflow_index: dict) -> list:
                 "repo_full_name": full_name,
                 "private": repo.get("private", False),
                 "permission_level": repo.get("permission_level", "none"),
-                "secret_names": secret_names,
-                "variable_names": variable_names,
+                "secret_names": sorted(set(secret_names)),
+                "variable_names": sorted(set(variable_names)),
                 "secrets_status": secrets_status,
-                "workflow_secrets": wf_by_repo.get(full_name, None),  # None = not yet scanned
-                "branch_protections_summary": ", ".join(bp_parts) if bp_parts else "—",
+                "workflow_secrets": wf_by_repo.get(full_name, None),
+                "branch_protections_summary": " | ".join(bp_parts) if bp_parts else "—",
             })
     return rows
 
@@ -177,7 +187,9 @@ def build_html_page(table_html: str, title: str, generated_at: str = "") -> str:
   tr.shared-write {{ background: #fff3cd; }}
   .high-perm {{ color: #c0392b; font-weight: bold; }}
   .status-err {{ color: #aaa; font-style: italic; }}
-  #filter-input {{ margin-bottom: 8px; padding: 4px 8px; font-family: monospace; font-size: 13px; width: 300px; border: 1px solid #ccc; border-radius: 3px; }}
+  .filters {{ margin-bottom: 8px; display: flex; gap: 8px; }}
+  .filters input {{ padding: 4px 8px; font-family: monospace; font-size: 13px; width: 300px; border: 1px solid #ccc; border-radius: 3px; }}
+  .filters label {{ font-size: 11px; color: #888; display: block; margin-bottom: 2px; }}
 </style>
 </head>
 <body>
@@ -187,16 +199,22 @@ def build_html_page(table_html: str, title: str, generated_at: str = "") -> str:
   <span class="l-shared">&#9632; shared write access (2+ tokens)</span>
   <span class="l-highperm">&#9632; high permission (admin/maintain/push)</span>
 </div>
-<input id="filter-input" type="text" placeholder="Filter rows..." oninput="filterTable(this.value)">
+<div class="filters">
+  <div><label>Filter rows</label><input id="filter-row" type="text" placeholder="repo, user, permission..." oninput="applyFilters()"></div>
+  <div><label>Search secrets</label><input id="filter-secret" type="text" placeholder="SECRET_NAME..." oninput="applyFilters()"></div>
+</div>
 <div class="table-wrap">
 {table_html}
 </div>
 <script>
-function filterTable(q) {{
-  var rows = document.querySelectorAll('#main-table tbody tr');
-  var lq = q.toLowerCase();
-  rows.forEach(function(row) {{
-    row.style.display = row.textContent.toLowerCase().includes(lq) ? '' : 'none';
+function applyFilters() {{
+  var q = document.getElementById('filter-row').value.toLowerCase();
+  var s = document.getElementById('filter-secret').value.toLowerCase();
+  document.querySelectorAll('#main-table tbody tr').forEach(function(row) {{
+    var text = row.textContent.toLowerCase();
+    var rowMatch = !q || text.includes(q);
+    var secretMatch = !s || text.includes(s);
+    row.style.display = (rowMatch && secretMatch) ? '' : 'none';
   }});
 }}
 </script>
