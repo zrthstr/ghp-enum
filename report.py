@@ -220,9 +220,10 @@ def generate_reports(output_dir: str, report_output_dir: str = None) -> None:
 
     print(f"Loaded {len(data.get('tokens', []))} token(s), {len(rows)} repo entries, {len(shared_write)} shared-write repos")
 
+    ts = str(int(__import__("time").time()))
     for include_secrets, suffix, label in [
-        (True, "report_with_secrets.html", "GitHub PAT Report — With Secrets"),
-        (False, "report_without_secrets.html", "GitHub PAT Report — Without Secrets"),
+        (True, f"report_with_secrets_{ts}.html", "GitHub PAT Report — With Secrets"),
+        (False, f"report_without_secrets_{ts}.html", "GitHub PAT Report — Without Secrets"),
     ]:
         table = build_html_table(rows, shared_write, include_secrets)
         page = build_html_page(table, label, generated_at)
