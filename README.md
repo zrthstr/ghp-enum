@@ -16,7 +16,7 @@ uv sync
 
 ## Usage
 
-Create a `tokens.txt` with one PAT per line (`#` for comments):
+Create a `tokens.txt` with one PAT per line:
 
 ```
 ghp_xxxxxxxxxxxxxx
