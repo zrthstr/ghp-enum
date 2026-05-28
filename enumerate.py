@@ -124,25 +124,12 @@ def get_user_identity(session: requests.Session):
     return user, scopes, status
 
 
-def get_user_orgs(session: requests.Session) -> list:
-    return paginate(session, "/user/orgs")
-
-
-def get_org_secrets(session: requests.Session, org_login: str):
-    return paginate_wrapped(session, f"/orgs/{org_login}/actions/secrets", "secrets")
-
-
-def get_org_variables(session: requests.Session, org_login: str):
-    return paginate_wrapped(session, f"/orgs/{org_login}/actions/variables", "variables")
-
-
-def get_org_repos(session: requests.Session, org: str) -> list:
-    all_repos = paginate(session, "/user/repos", {
-        "visibility": "all",
+def get_privileged_repos(session: requests.Session) -> list:
+    return paginate(session, "/user/repos", {
         "affiliation": "owner,collaborator,organization_member",
+        "visibility": "all",
         "sort": "full_name",
     })
-    return [r for r in all_repos if r.get("owner", {}).get("login", "").lower() == org.lower()]
 
 
 PERMISSION_PRIORITY = ["admin", "maintain", "push", "triage", "pull"]
@@ -188,7 +175,7 @@ def find_existing_output(token_prefix: str, output_dir: str) -> str | None:
     return None
 
 
-def enumerate_token(token: str, output_dir: str, org: str) -> dict:
+def enumerate_token(token: str, output_dir: str) -> dict:
     token_prefix = token[:12]
 
     existing = find_existing_output(token_prefix, output_dir)
@@ -209,7 +196,6 @@ def enumerate_token(token: str, output_dir: str, org: str) -> dict:
             "token_prefix": token_prefix,
             "user": {},
             "scopes": [],
-            "orgs": [],
             "repos": [],
             "errors": [{"endpoint": "/user", "status": status, "reason": "unauthorized_or_error"}],
         }
@@ -219,31 +205,8 @@ def enumerate_token(token: str, output_dir: str, org: str) -> dict:
     login = user["login"]
     logger.info(f"  Authenticated as: {login}")
 
-    # Orgs
-    orgs_raw = get_user_orgs(session)
-    orgs = []
-    for org in orgs_raw:
-        org_login = org.get("login", "")
-        secrets = get_org_secrets(session, org_login)
-        variables = get_org_variables(session, org_login)
-
-        if isinstance(secrets, str):
-            errors.append({"endpoint": f"/orgs/{org_login}/actions/secrets", "status": 403, "reason": secrets})
-            secrets = []
-        if isinstance(variables, str):
-            errors.append({"endpoint": f"/orgs/{org_login}/actions/variables", "status": 403, "reason": variables})
-            variables = []
-
-        orgs.append({
-            "login": org_login,
-            "id": org.get("id"),
-            "secrets": secrets,
-            "variables": variables,
-        })
-
-    # Repos
-    repos_raw = get_org_repos(session, org)
-    logger.info(f"  Found {len(repos_raw)} repos")
+    repos_raw = get_privileged_repos(session)
+    logger.info(f"  Found {len(repos_raw)} privileged repos")
     repos = []
 
     for repo in repos_raw:
@@ -259,15 +222,8 @@ def enumerate_token(token: str, output_dir: str, org: str) -> dict:
 
         if isinstance(secrets, str):
             errors.append({"endpoint": f"/repos/{full_name}/actions/secrets", "status": 403, "reason": secrets})
-            secrets_val = secrets
-        else:
-            secrets_val = secrets
-
         if isinstance(variables, str):
             errors.append({"endpoint": f"/repos/{full_name}/actions/variables", "status": 403, "reason": variables})
-            variables_val = variables
-        else:
-            variables_val = variables
 
         branches = []
         if default_branch is not None:
@@ -298,8 +254,8 @@ def enumerate_token(token: str, output_dir: str, org: str) -> dict:
             "default_branch": default_branch,
             "permissions": permissions,
             "permission_level": permission_level,
-            "secrets": secrets_val,
-            "variables": variables_val,
+            "secrets": secrets,
+            "variables": variables,
             "branches": branches,
         })
 
@@ -307,7 +263,6 @@ def enumerate_token(token: str, output_dir: str, org: str) -> dict:
         "token_prefix": token_prefix,
         "user": user,
         "scopes": scopes,
-        "orgs": orgs,
         "repos": repos,
         "errors": errors,
     }
@@ -338,7 +293,6 @@ def merge_results(results: list, output_dir: str) -> None:
 def main():
     parser = argparse.ArgumentParser(description="Enumerate GitHub PATs: repos, permissions, secrets, branch protections.")
     parser.add_argument("tokens_file", help="Text file with one PAT per line (# for comments)")
-    parser.add_argument("--org", required=True, help="GitHub organization to enumerate repos from")
     parser.add_argument("--output-dir", default="./output", help="Directory to write JSON output (default: ./output)")
     args = parser.parse_args()
 
@@ -357,7 +311,7 @@ def main():
     for i, token in enumerate(tokens, 1):
         logger.info(f"[{i}/{len(tokens)}]")
         try:
-            result = enumerate_token(token, args.output_dir, args.org)
+            result = enumerate_token(token, args.output_dir)
             results.append(result)
             if not result.get("user"):
                 failed += 1
