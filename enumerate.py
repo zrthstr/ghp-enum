@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""GitHub PAT enumerator — collects repos, permissions, secrets, variables, and branch protections."""
+"""GitHub PAT enumerator — collects repos, permissions, secrets, variables, branch protections, and workflow secrets."""
 
 import argparse
+import base64
 import json
 import logging
 import os
+import re
 import time
 import urllib.parse
 from datetime import datetime, timezone
@@ -14,6 +16,8 @@ import requests
 BASE_URL = "https://api.github.com"
 RATE_LIMIT_PAUSE_THRESHOLD = 10
 PER_PAGE = 100
+
+WORKFLOW_SECRET_RE = re.compile(r'\$\{\{\s*secrets\.([A-Za-z0-9_]+)\s*\}\}')
 
 logging.basicConfig(
     level=logging.INFO,
@@ -166,6 +170,29 @@ def get_branch_protection(session: requests.Session, owner: str, repo: str, bran
     return "not_protected"
 
 
+def get_workflow_secrets(session: requests.Session, owner: str, repo: str) -> list:
+    """Fetch .github/workflows/*.yml and extract referenced secret names."""
+    data, status, _ = api_get(session, f"/repos/{owner}/{repo}/contents/.github/workflows")
+    if status != 200 or not isinstance(data, list):
+        return []
+
+    found = set()
+    for entry in data:
+        if not entry.get("name", "").endswith((".yml", ".yaml")):
+            continue
+        file_data, fstatus, _ = api_get(session, f"/repos/{owner}/{repo}/contents/.github/workflows/{entry['name']}")
+        if fstatus != 200 or not isinstance(file_data, dict):
+            continue
+        content_b64 = file_data.get("content", "")
+        try:
+            content = base64.b64decode(content_b64).decode("utf-8", errors="replace")
+        except Exception:
+            continue
+        found.update(WORKFLOW_SECRET_RE.findall(content))
+
+    return sorted(found)
+
+
 def find_existing_output(token_prefix: str, output_dir: str) -> str | None:
     if not os.path.isdir(output_dir):
         return None
@@ -175,18 +202,44 @@ def find_existing_output(token_prefix: str, output_dir: str) -> str | None:
     return None
 
 
+def patch_workflow_secrets(existing_path: str, session: requests.Session) -> dict:
+    """Load existing JSON, add workflow_secrets to each repo that lacks it, save in place."""
+    with open(existing_path) as f:
+        result = json.load(f)
+
+    repos = result.get("repos", [])
+    total = len(repos)
+    needs_patch = sum(1 for r in repos if "workflow_secrets" not in r)
+
+    if needs_patch == 0:
+        logger.info(f"  Already up to date: {os.path.basename(existing_path)}")
+        return result
+
+    logger.info(f"  Patching workflow secrets for {needs_patch}/{total} repos in {os.path.basename(existing_path)}")
+    for i, repo in enumerate(repos, 1):
+        if "workflow_secrets" in repo:
+            continue
+        owner = repo.get("owner", "")
+        name = repo.get("name", "")
+        logger.info(f"  [{i}/{total}] {repo.get('full_name')} — scanning workflows")
+        repo["workflow_secrets"] = get_workflow_secrets(session, owner, name)
+
+    with open(existing_path, "w") as f:
+        json.dump(result, f, indent=2)
+    logger.info(f"  Patched and saved: {os.path.basename(existing_path)}")
+    return result
+
+
 def enumerate_token(token: str, output_dir: str) -> dict:
     token_prefix = token[:12]
+    session = make_session(token)
 
     existing = find_existing_output(token_prefix, output_dir)
     if existing:
-        logger.info(f"Skipping {token_prefix} — output already exists: {os.path.basename(existing)}")
-        with open(existing) as f:
-            return json.load(f)
+        logger.info(f"Existing output found for {token_prefix} — checking for missing workflow secrets...")
+        return patch_workflow_secrets(existing, session)
 
     logger.info(f"Processing token {token_prefix}...")
-
-    session = make_session(token)
     errors = []
 
     user, scopes, status = get_user_identity(session)
@@ -222,6 +275,7 @@ def enumerate_token(token: str, output_dir: str) -> dict:
 
         secrets = get_repo_secrets(session, owner, name)
         variables = get_repo_variables(session, owner, name)
+        workflow_secrets = get_workflow_secrets(session, owner, name)
 
         if isinstance(secrets, str):
             errors.append({"endpoint": f"/repos/{full_name}/actions/secrets", "status": 403, "reason": secrets})
@@ -259,6 +313,7 @@ def enumerate_token(token: str, output_dir: str) -> dict:
             "permission_level": permission_level,
             "secrets": secrets,
             "variables": variables,
+            "workflow_secrets": workflow_secrets,
             "branches": branches,
         })
 
@@ -294,7 +349,7 @@ def merge_results(results: list, output_dir: str) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Enumerate GitHub PATs: repos, permissions, secrets, branch protections.")
+    parser = argparse.ArgumentParser(description="Enumerate GitHub PATs: repos, permissions, secrets, branch protections, workflow secrets.")
     parser.add_argument("tokens_file", help="Text file with one PAT per line (# for comments)")
     parser.add_argument("--output-dir", default="./output", help="Directory to write JSON output (default: ./output)")
     args = parser.parse_args()
@@ -311,22 +366,24 @@ def main():
     results = []
     failed = 0
     skipped = 0
+    patched = 0
     for i, token in enumerate(tokens, 1):
         logger.info(f"[{i}/{len(tokens)}]")
         try:
+            existing_before = find_existing_output(token[:12], args.output_dir)
             result = enumerate_token(token, args.output_dir)
             results.append(result)
             if not result.get("user"):
                 failed += 1
-            elif find_existing_output(token[:12], args.output_dir):
-                skipped += 1
+            elif existing_before:
+                patched += 1
         except Exception as exc:
             logger.error(f"Unexpected error on token {i}: {exc}")
             failed += 1
 
     merge_results(results, args.output_dir)
-    fetched = len(tokens) - failed - skipped
-    logger.info(f"Done. {fetched} fetched, {skipped} skipped (already done), {failed} failed. Output: {args.output_dir}/")
+    fetched = len(tokens) - failed - patched
+    logger.info(f"Done. {fetched} fetched, {patched} patched with workflow secrets, {failed} failed. Output: {args.output_dir}/")
 
 
 if __name__ == "__main__":

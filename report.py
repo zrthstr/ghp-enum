@@ -56,6 +56,8 @@ def flatten_to_rows(data: dict) -> list:
                     bp_parts.append(f"{bname}:unknown")
             branch_protections_summary = ", ".join(bp_parts) if bp_parts else "—"
 
+            workflow_secrets = repo.get("workflow_secrets", [])
+
             rows.append({
                 "token_prefix": token_prefix,
                 "username": username,
@@ -65,6 +67,7 @@ def flatten_to_rows(data: dict) -> list:
                 "secret_names": secret_names,
                 "variable_names": variable_names,
                 "secrets_status": secrets_status,
+                "workflow_secrets": workflow_secrets,
                 "branch_protections_summary": branch_protections_summary,
                 "orgs": org_logins,
             })
@@ -92,7 +95,7 @@ def build_html_table(rows: list, shared_write_repos: set, include_secrets: bool)
 
     headers = ["Token Prefix", "Username", "Repo", "Private", "Permission"]
     if include_secrets:
-        headers += ["Secret Names", "Variable Names"]
+        headers += ["Secret Names", "Variable Names", "Workflow Secrets"]
     headers += ["Branch Protections", "Orgs"]
 
     parts.append("<thead><tr>")
@@ -125,8 +128,10 @@ def build_html_table(rows: list, shared_write_repos: set, include_secrets: bool)
                 secret_display = f'<span class="status-{html.escape(row["secrets_status"])}">{html.escape(row["secrets_status"])}</span>'
 
             var_display = ", ".join(html.escape(v) for v in row["variable_names"]) or "—"
+            wf_display = ", ".join(html.escape(s) for s in row["workflow_secrets"]) or "—"
             parts.append(f"<td>{secret_display}</td>")
             parts.append(f"<td>{var_display}</td>")
+            parts.append(f"<td>{wf_display}</td>")
 
         parts.append(f"<td>{html.escape(row['branch_protections_summary'])}</td>")
         parts.append(f"<td>{html.escape(row['orgs']) if row['orgs'] else '—'}</td>")
