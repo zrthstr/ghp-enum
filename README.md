@@ -21,12 +21,19 @@ ghp_xxxxxxxxxxxxxx
 ghp_yyyyyyyyyyyyyy
 ```
 
-**Enumerate:**
+**Enumerate repos, permissions, secrets, branch protections:**
 ```bash
 uv run python enumerate.py tokens.txt --output-dir ./output
 ```
 
 Writes one JSON file per token (`{username}_{token_prefix}.json`) plus `merged_all.json` into `./output/`.
+
+**Scan workflow files for referenced secret names (optional, read-only):**
+```bash
+uv run python scan_workflows.py tokens.txt --output-dir ./output
+```
+
+Writes `{username}_{token_prefix}_workflows.json` per token plus `merged_workflows.json`. Does not re-fetch permissions data.
 
 **Generate reports:**
 ```bash
