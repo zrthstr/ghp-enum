@@ -2,6 +2,8 @@
 
 Enumerate GitHub Personal Access Tokens: repos, permissions, secrets, variables, and branch protections. Produces per-token JSON files and HTML reports.
 
+![demo screenshot](demo/20260528111319.png)
+
 ## Install
 
 ```bash
