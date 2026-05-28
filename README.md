@@ -4,6 +4,8 @@ Enumerate GitHub Personal Access Tokens: repos, permissions, secrets, variables,
 
 ![demo screenshot](demo/20260528111319.png)
 
+A red team tool for situations where you have one or more GitHub Personal Access Tokens and want to understand the full blast radius: which repos each token can reach, what permission level it has, whether branch protections can be bypassed, and which secrets are exposed. Useful for mapping lateral movement paths and identifying repos where multiple tokens share write access.
+
 ## Install
 
 ```bash
